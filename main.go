@@ -32,6 +32,10 @@ func main() {
 		MaxAge:       12 * time.Hour,
 	}))
 
+	router.OPTIONS("/contact", func(c *gin.Context) {
+		c.JSON(200, gin.H{"message": "OK"})
+	})
+
 	router.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{"message": "OK"})
 	})
