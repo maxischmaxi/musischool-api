@@ -26,7 +26,7 @@ func main() {
 	router := gin.Default()
 
 	router.Use(cors.New(cors.Config{
-		AllowOrigins: []string{"http://localhost:5173", "https://musicschool-cml.de", "https://www.musicschool-cml.de"},
+		AllowOrigins: []string{"http://localhost:5173", "https://musicschool-cml-proxy.maximilian-jeschek.workers.dev"},
 		AllowMethods: []string{"GET", "POST", "OPTIONS"},
 		AllowHeaders: []string{"Origin", "Content-Type"},
 		MaxAge:       12 * time.Hour,
