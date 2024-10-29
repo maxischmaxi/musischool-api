@@ -7,10 +7,8 @@ import (
 	"time"
 
 	"github.com/gin-contrib/cors"
-	"github.com/gin-gonic/autotls"
 	"github.com/gin-gonic/gin"
 	"github.com/resend/resend-go/v2"
-	"golang.org/x/crypto/acme/autocert"
 )
 
 type Kontakt struct {
@@ -24,12 +22,6 @@ func main() {
 	resendApiKey := os.Getenv("RESEND_API_KEY")
 	receiver := os.Getenv("RESEND_RECEIVER")
 	client := resend.NewClient(resendApiKey)
-
-	m := autocert.Manager{
-		Prompt:     autocert.AcceptTOS,
-		HostPolicy: autocert.HostWhitelist("musicschool-cml.de", "www.musicschool-cml.de"),
-		Cache:      autocert.DirCache("certs"),
-	}
 
 	router := gin.Default()
 
@@ -104,5 +96,5 @@ func main() {
 		}
 	})
 
-	log.Fatal(autotls.RunWithManager(router, &m))
+	log.Fatal(router.Run(":8080"))
 }
