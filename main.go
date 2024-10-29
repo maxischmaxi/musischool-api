@@ -7,8 +7,10 @@ import (
 	"time"
 
 	"github.com/gin-contrib/cors"
+	"github.com/gin-gonic/autotls"
 	"github.com/gin-gonic/gin"
 	"github.com/resend/resend-go/v2"
+	"golang.org/x/crypto/acme/autocert"
 )
 
 type Kontakt struct {
@@ -20,7 +22,14 @@ type Kontakt struct {
 
 func main() {
 	resendApiKey := os.Getenv("RESEND_API_KEY")
+	receiver := os.Getenv("RESEND_RECEIVER")
 	client := resend.NewClient(resendApiKey)
+
+	m := autocert.Manager{
+		Prompt:     autocert.AcceptTOS,
+		HostPolicy: autocert.HostWhitelist("musicschool-cml.de", "www.musicschool-cml.de"),
+		Cache:      autocert.DirCache("certs"),
+	}
 
 	router := gin.Default()
 
@@ -30,6 +39,10 @@ func main() {
 		AllowHeaders: []string{"Origin", "Content-Type"},
 		MaxAge:       12 * time.Hour,
 	}))
+
+	router.GET("/health", func(c *gin.Context) {
+		c.JSON(200, gin.H{"message": "OK"})
+	})
 
 	router.POST("/contact", func(c *gin.Context) {
 		var kontakt Kontakt
@@ -41,8 +54,8 @@ func main() {
 		}
 
 		params := &resend.SendEmailRequest{
-			From:    "JeschekDEV <mail@mail.jeschek.dev>",
-			To:      []string{"max@jeschek.dev"},
+			From:    "Musikschule CML <mail@mail.jeschek.dev>",
+			To:      []string{receiver},
 			Subject: "Kontaktformular - musicschool-cml.de",
 			Html: fmt.Sprintf(`
 				<head></head>
@@ -91,8 +104,5 @@ func main() {
 		}
 	})
 
-	err := router.Run(":8080")
-	if err != nil {
-		log.Fatal(err)
-	}
+	log.Fatal(autotls.RunWithManager(router, &m))
 }
