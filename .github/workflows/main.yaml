@@ -42,4 +42,4 @@ jobs:
 
       - name: Update Kubernetes deployment
         run: |
-          kubectl set image deployment/dein-api-deployment musicschool-api=gcr.io/${{ secrets.GCP_PROJECT_ID }}/musicschool-api:$GITHUB_SHA
+          kubectl set image deployment/musicschool-cml musicschool-api=gcr.io/${{ secrets.GCP_PROJECT_ID }}/musicschool-api:$GITHUB_SHA
