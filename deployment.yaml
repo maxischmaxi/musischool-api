@@ -17,3 +17,14 @@ spec:
         image: gcr.io/musicschool-cml/musicschool-api
         ports:
         - containerPort: 8080
+        env:
+          - name: RESEND_API_KEY
+            valueFrom:
+              secretKeyRef:
+                name: resend-api-key
+                key: RESEND_API_KEY
+          - name: RESEND_RECEIVER
+            valueFrom:
+              secretKeyRef:
+                name: resend-receiver
+                key: RESEND_RECEIVER
