@@ -26,15 +26,11 @@ func main() {
 	router := gin.Default()
 
 	router.Use(cors.New(cors.Config{
-		AllowOrigins: []string{"http://localhost:5173", "https://musicschool-cml-proxy.maximilian-jeschek.workers.dev"},
+		AllowOrigins: []string{"localhost:5173", "musicschool-cml-proxy.maximilian-jeschek.workers.dev"},
 		AllowMethods: []string{"GET", "POST", "OPTIONS"},
 		AllowHeaders: []string{"Origin", "Content-Type"},
 		MaxAge:       12 * time.Hour,
 	}))
-
-	router.OPTIONS("/contact", func(c *gin.Context) {
-		c.JSON(200, gin.H{"message": "OK"})
-	})
 
 	router.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{"message": "OK"})
