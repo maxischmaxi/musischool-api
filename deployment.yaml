@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: musicschool-cml-deployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: musicschool-api
+  template:
+    metadata:
+      labels:
+        app: musicschool-api
+    spec:
+      containers:
+      - name: musicschool-api-container
+        image: gcr.io/musicschool-cml/musicschool-api
+        ports:
+        - containerPort: 8080
