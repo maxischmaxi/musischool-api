@@ -26,11 +26,11 @@ func main() {
 	router := gin.Default()
 
 	router.Use(cors.New(cors.Config{
-		AllowOrigins:    []string{"http://localhost:5173", "https://musicschool-cml.de", "*"},
-		AllowMethods:    []string{"GET", "POST", "OPTIONS", "PUT"},
-		AllowHeaders:    []string{"Origin", "Content-Type"},
-		AllowWebSockets: false,
-		MaxAge:          12 * time.Hour,
+		// AllowOrigins:    []string{"http://localhost:5173", "https://musicschool-cml.de", "*"},
+		AllowOrigins: []string{"*"},
+		AllowMethods: []string{"GET", "POST", "OPTIONS", "PUT"},
+		AllowHeaders: []string{"Origin", "Content-Type"},
+		MaxAge:       12 * time.Hour,
 	}))
 
 	router.GET("/", func(c *gin.Context) {
@@ -51,37 +51,37 @@ func main() {
 			To:      []string{receiver},
 			Subject: "Kontaktformular - musicschool-cml.de",
 			Html: fmt.Sprintf(`
-<head></head>
-<section style="max-width: 42rem; padding: 2rem 1.5rem; margin: 0 auto; background-color: #ffffff;">
-    <header>
-        <a href="https://musicschool-cml.de">
+				<head></head>
+				<section style="max-width: 42rem; padding: 2rem 1.5rem; margin: 0 auto; background-color: #ffffff;">
+				<header>
+				<a href="https://musicschool-cml.de">
 				<img style="width: auto; height: 1.75rem;" src="https://musicschool-cml.de/favicon.ico" alt="" />
-        </a>
-    </header>
+				</a>
+				</header>
 
-    <main style="margin-top: 2rem;">
-        <h2 style="color: #4a5568;">Hi Jana,</h2>
+				<main style="margin-top: 2rem;">
+				<h2 style="color: #4a5568;">Hi Jana,</h2>
 
-        <p style="margin-top: 0.5rem; line-height: 1.75; color: #718096;">
-            Das Kontaktformular auf musicschool-cml.de wurde von
-            <span style="font-weight: 600;">%s</span> ausgefüllt.
-        </p>
+				<p style="margin-top: 0.5rem; line-height: 1.75; color: #718096;">
+				Das Kontaktformular auf musicschool-cml.de wurde von
+				<span style="font-weight: 600;">%s</span> ausgefüllt.
+				</p>
 
-        <p style="margin-top: 2rem; color: #718096;">
-            Die Nachricht:
-            <br />
-            %s
-        </p>
+				<p style="margin-top: 2rem; color: #718096;">
+				Die Nachricht:
+				<br />
+				%s
+				</p>
 
-        <p style="margin-top: 2rem; color: #718096;">
-            Du kannst
-            <a href="%s" style="color: #3182ce; text-decoration: underline;">
-                %s
-            </a>
-            direkt antworten.
-        </p>
-    </main>
-</section>
+				<p style="margin-top: 2rem; color: #718096;">
+				Du kannst
+				<a href="%s" style="color: #3182ce; text-decoration: underline;">
+				%s
+				</a>
+				direkt antworten.
+				</p>
+				</main>
+				</section>
 				`, kontakt.Name, kontakt.Message, fmt.Sprintf("mailto:%s", kontakt.Email), kontakt.Email),
 		}
 
