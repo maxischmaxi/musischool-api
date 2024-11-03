@@ -18,6 +18,11 @@ spec:
         ports:
         - containerPort: 8080
         env:
+          - name: RECAPTCHA_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: recaptcha-secret
+                key: RECAPTCHA_SECRET
           - name: RESEND_API_KEY
             valueFrom:
               secretKeyRef:
