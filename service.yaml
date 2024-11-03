@@ -1,7 +1,9 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: musicschool-cml-service
+  name: musicschool-cml-load-balancer
+  annotations:
+    cloud.google.com/load-balancer-type: "External"
 spec:
   selector:
     app: musicschool-api
@@ -10,3 +12,4 @@ spec:
       port: 80
       targetPort: 8080
   type: LoadBalancer
+  loadBalancerIP: 34.19.103.158

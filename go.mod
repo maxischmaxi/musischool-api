@@ -5,6 +5,7 @@ go 1.23.2
 require (
 	github.com/gin-contrib/cors v1.7.2
 	github.com/gin-gonic/gin v1.10.0
+	github.com/go-pdf/fpdf v0.9.0
 	github.com/resend/resend-go/v2 v2.13.0
 )
 

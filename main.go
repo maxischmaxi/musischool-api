@@ -1,21 +1,45 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/go-pdf/fpdf"
 	"github.com/resend/resend-go/v2"
 )
+
+type Anmeldung struct {
+	Instrument            string `json:"instrument"`
+	Lehrer                string `json:"lehrer"`
+	Plz                   string `json:"plz"`
+	Email                 string `json:"email"`
+	SchuelerName          string `json:"schueler_name"`
+	Wohnort               string `json:"ort"`
+	Strasse               string `json:"strasse"`
+	Erziehungsberechtigte string `json:"erziehungsberechtigte"`
+	Telefon               string `json:"telefon"`
+	Geburtsdatum          string `json:"geburtsdatum"`
+	Vertrag               string `json:"vertrag"`
+	Einverstaendnis       bool   `json:"einverstaendnis"`
+}
 
 type Kontakt struct {
 	Email   string `json:"email"`
 	Name    string `json:"name"`
 	Message string `json:"message"`
 	Token   string `json:"token"`
+}
+
+func FirstCharUppercased(name string) string {
+	firstChar := strings.ToUpper(string(name[0]))
+	rest := name[1:]
+	return fmt.Sprintf("%s%s", firstChar, rest)
 }
 
 func main() {
@@ -35,6 +59,255 @@ func main() {
 
 	router.GET("/", func(c *gin.Context) {
 		c.JSON(200, gin.H{"message": "OK"})
+	})
+
+	router.POST("/anmeldung", func(c *gin.Context) {
+		var anmeldung Anmeldung
+		err := c.BindJSON(&anmeldung)
+
+		if err != nil {
+			c.JSON(400, gin.H{"error": err.Error()})
+			return
+		}
+
+		if !anmeldung.Einverstaendnis {
+			c.JSON(400, gin.H{"error": "Einverständniserklärung nicht akzeptiert"})
+			return
+		}
+
+		pdf := fpdf.New("P", "mm", "A4", "")
+		tr := pdf.UnicodeTranslatorFromDescriptor("")
+
+		variantenString := ""
+		switch anmeldung.Vertrag {
+		case "1":
+			variantenString = "30 Minuten Einzelunterricht"
+		case "2":
+			variantenString = "45 Minuten Einzelunterricht"
+		case "3":
+			variantenString = "60 Minuten Gruppenunterricht"
+		case "4":
+			variantenString = "45 Minuten Einzelunterricht"
+		default:
+			break
+		}
+
+		title := tr(fmt.Sprintf("Anmeldung und Unterrichtsvertrag zum %s", variantenString))
+
+		pdf.SetTitle(title, true)
+		pdf.SetAuthor("Musicschool CML", true)
+		pdf.SetHeaderFunc(func() {
+			pdf.Image("logo.png", 10, 10, 0, 0, false, "", 0, "")
+			pdf.SetFont("Arial", "B", 12)
+			pdf.Text(180, 10, time.Now().Format("02.01.2006"))
+		})
+		pdf.AddPage()
+		pdf.SetFont("Arial", "", 12)
+		pdf.Text(20, 55, fmt.Sprintf("Instrument: %s", tr(FirstCharUppercased(anmeldung.Instrument))))
+		pdf.Text(110, 55, fmt.Sprintf("Lehrer: %s", tr(FirstCharUppercased(anmeldung.Lehrer))))
+		pdf.Text(20, 61, fmt.Sprintf("%s: %s", tr("Straße"), tr(anmeldung.SchuelerName)))
+		pdf.Text(110, 61, fmt.Sprintf("Geburtsdatum: %s", anmeldung.Geburtsdatum))
+		pdf.Text(20, 67, fmt.Sprintf("%s: %s", tr("Straße"), tr(anmeldung.Strasse)))
+		pdf.Text(110, 67, fmt.Sprintf("PLZ: %s", anmeldung.Plz))
+		pdf.Text(20, 73, fmt.Sprintf("Wohnort: %s", tr(anmeldung.Wohnort)))
+		pdf.Text(110, 73, fmt.Sprintf("Erziehungsberechtigte: %s", tr(anmeldung.Erziehungsberechtigte)))
+		pdf.Text(20, 79, fmt.Sprintf("Telefon: +49 %s", anmeldung.Telefon))
+		pdf.Text(110, 79, fmt.Sprintf("E-Mail: %s", anmeldung.Email))
+
+		var lines = []string{}
+
+		switch anmeldung.Vertrag {
+		case "1":
+			lines = []string{
+				"Die Musikschule übernimmt den regelmäßigen Unterricht des Schülers beginnend am ...........................",
+				"Als Unterrichtsjahr gilt das Kalenderjahr. Der Unterricht wird als Lektion zu wöchentlich einmal 30",
+				"Minuten in multidimensionaler Form (siehe Anhang) erteilt, monatliche Gebühr = 88,- Euro.",
+				"Das Honorar wird als Jahreshonorar berechnet und ist in 12 gleichen Raten im Voraus bis zum 10.",
+				"jeden Monats zu zahlen, einmalige Aufnahmegebühr: 20,- Euro. Der Unterricht kann nur an",
+				"Schultagen erteilt werden. Bei Rücklastschriften berechnen wir 10,-€ pro nicht einlösbarer",
+				"Lastschrift. Die erste Unterrichtsstunde ist ein Gratis-Probeunterricht, die vereinbarte Zeit gilt für alle folgenden",
+				"Stunden. Will ein Schüler den Unterricht nach der kostenlosen Probestunde nicht fortsetzen, genügt",
+				"eine entsprechende mündliche Mitteilung. Bei längerer Krankheit des Schülers entfällt das anteilige",
+				"Honorar nach der vierten einander folgenden versäumten Stunde.",
+				"Der Kurs kann von den Vertragspartnern mit sechswöchiger Frist zum 30.April/ 31.August/",
+				"31.Dezember in schriftlicher Form gekündigt werden. Die Kündigung kann durch eine E-Mail",
+				"erfolgen und muß vor Beginn der Kündigungsfrist bei o.g. Anschrift eingegangen sein. Eine",
+				"Erhöhung des Honorars ist möglich und hat nach Grundsätzen der Billigkeit zu erfolgen. Sie muß",
+				"mindestens 8 Wochen vorher dem Vertragspartner schriftlich mitgeteilt werden.",
+				"Für vom Schüler versäumte oder abgesagte Stunden ist die Lehrkraft nicht nachleistungspflichtig,",
+				"die anteilige Vergütung hierfür kann vom Honorar nicht abgezogen werden. Es besteht jedoch die",
+				"Möglichkeit, in derselben Woche ersatzweise an einer anderen Unterrichtsstunde teilzunehmen,",
+				"wenn die Lehrkraft im Falle ernsthafter Verhinderung mindestens 24 Stunden vorher davon",
+				"Kenntnis erhalten hat. Aus anderen Gründen von der Lehrkraft abgesagte Stunden werden",
+				"nachgegeben, ersatzweise wird das anteilige Honorar erstattet. Zahlungsweise: nur monatlich durch",
+				"Einzugsverfahren. Änderungen und Ergänzungen des Vertrages sind nur wirksam, wenn sie",
+				"schriftlich erfolgen. Werden einzelne Bestimmungen dieses Vertrages unwirksam, wird dadurch die",
+				"Gültigkeit des Vertrages im Übrigen nicht berührt.",
+			}
+
+		case "2":
+			lines = []string{
+				"Die Musikschule übernimmt den regelmäßigen Unterricht des Schülers beginnend am ...........................",
+				"Als Unterrichtsjahr gilt das Kalenderjahr. Der Unterricht wird als Lektion zu wöchentlich einmal 45",
+				"Minuten erteilt, monatliche Gebühr = 111,- Euro.",
+				"Das Honorar wird als Jahreshonorar berechnet und ist in 12 gleichen Raten im Voraus bis zum 10.",
+				"jeden Monats zu zahlen, einmalige Aufnahmegebühr: 20,- Euro. Der Unterricht kann nur an",
+				"Schultagen erteilt werden. Bei Rücklastschriften berechnen wir 10,-€ pro nicht einlösbarer",
+				"Lastschrift. Die erste Unterrichtsstunde ist ein Gratis-Probeunterricht, die vereinbarte Zeit gilt für alle folgenden",
+				"Stunden. Will ein Schüler den Unterricht nach der kostenlosen Probestunde nicht fortsetzen, genügt",
+				"eine entsprechende mündliche Mitteilung. Bei längerer Krankheit des Schülers entfällt das anteilige",
+				"Honorar nach der vierten einander folgenden versäumten Stunde.",
+				"Der Kurs kann von den Vertragspartnern mit sechswöchiger Frist zum 30.April/ 31.August/",
+				"31.Dezember in schriftlicher Form gekündigt werden. Die Kündigung kann durch eine E-Mail",
+				"erfolgen und muß vor Beginn der Kündigungsfrist bei o.g. Anschrift eingegangen sein. Eine",
+				"Erhöhung des Honorars ist möglich und hat nach Grundsätzen der Billigkeit zu erfolgen. Sie muß",
+				"mindestens 8 Wochen vorher dem Vertragspartner schriftlich mitgeteilt werden.",
+				"Für vom Schüler versäumte oder abgesagte Stunden ist die Lehrkraft nicht nachleistungspflichtig,",
+				"die anteilige Vergütung hierfür kann vom Honorar nicht abgezogen werden. Es besteht jedoch die",
+				"Möglichkeit, in derselben Woche ersatzweise an einer anderen Unterrichtsstunde teilzunehmen,",
+				"wenn die Lehrkraft im Falle ernsthafter Verhinderung mindestens 24 Stunden vorher davon",
+				"Kenntnis erhalten hat. Aus anderen Gründen von der Lehrkraft abgesagte Stunden werden",
+				"nachgegeben, ersatzweise wird das anteilige Honorar erstattet. Zahlungsweise: nur monatlich durch",
+				"Einzugsverfahren. Änderungen und Ergänzungen des Vertrages sind nur wirksam, wenn sie",
+				"schriftlich erfolgen. Werden einzelne Bestimmungen dieses Vertrages unwirksam, wird dadurch die",
+				"Gültigkeit des Vertrages im Übrigen nicht berührt.",
+			}
+		case "3":
+			lines = []string{
+				"Die Musikschule übernimmt den regelmäßigen Unterricht des Schülers beginnend am ...........................",
+				"Als Unterrichtsjahr gilt das Kalenderjahr. Der Unterricht wird als Lektion zu wöchentlich einmal 60",
+				"Minuten als Gruppenunterricht erteilt, monatliche Gebühr = 66,- Euro.",
+				"Das Honorar wird als Jahreshonorar berechnet und ist in 12 gleichen Raten im Voraus bis zum 10.",
+				"jeden Monats zu zahlen, einmalige Aufnahmegebühr: 20,- Euro. Der Unterricht kann nur an",
+				"Schultagen erteilt werden. Bei Rücklastschriften berechnen wir 10,-€ pro nicht einlösbarer",
+				"Lastschrift. Die erste Unterrichtsstunde ist ein Gratis-Probeunterricht, die vereinbarte Zeit gilt für alle folgenden",
+				"Stunden. Will ein Schüler den Unterricht nach der kostenlosen Probestunde nicht fortsetzen, genügt",
+				"eine entsprechende mündliche Mitteilung. Bei längerer Krankheit des Schülers entfällt das anteilige",
+				"Honorar nach der vierten einander folgenden versäumten Stunde.",
+				"Der Kurs kann von den Vertragspartnern mit sechswöchiger Frist zum 30.April/ 31.August/",
+				"31.Dezember in schriftlicher Form gekündigt werden. Die Kündigung kann durch eine E-Mail",
+				"erfolgen und muß vor Beginn der Kündigungsfrist bei o.g. Anschrift eingegangen sein. Eine",
+				"Erhöhung des Honorars ist möglich und hat nach Grundsätzen der Billigkeit zu erfolgen. Sie muß",
+				"mindestens 8 Wochen vorher dem Vertragspartner schriftlich mitgeteilt werden.",
+				"Für vom Schüler versäumte oder abgesagte Stunden ist die Lehrkraft nicht nachleistungspflichtig,",
+				"die anteilige Vergütung hierfür kann vom Honorar nicht abgezogen werden. Es besteht jedoch die",
+				"Möglichkeit, in derselben Woche ersatzweise an einer anderen Unterrichtsstunde teilzunehmen,",
+				"wenn die Lehrkraft im Falle ernsthafter Verhinderung mindestens 24 Stunden vorher davon",
+				"Kenntnis erhalten hat. Aus anderen Gründen von der Lehrkraft abgesagte Stunden werden",
+				"nachgegeben, ersatzweise wird das anteilige Honorar erstattet. Zahlungsweise: nur monatlich durch",
+				"Einzugsverfahren. Änderungen und Ergänzungen des Vertrages sind nur wirksam, wenn sie",
+				"schriftlich erfolgen. Werden einzelne Bestimmungen dieses Vertrages unwirksam, wird dadurch die",
+				"Gültigkeit des Vertrages im Übrigen nicht berührt.",
+			}
+		case "4":
+			lines = []string{
+				"Der Unterricht wird als 10-stündige Lektion zu jeweils 45 Minuten bei freier Vereinbarung des",
+				"Zeitpunktes in Absprache mit der zuständigen Lehrkraft erteilt, einmahlige Gebühr = 450,- Euro.",
+				"Aufnahmegebühr: 20,- Euro.",
+				"Unterrichtsstunden können abgesagt werden, wenn die Lehrkraft im Falle ernsthafter Verhinderung",
+				"mindestens 24 Stunden vorher davon Kenntnis erhalten hat, andernfalls gelten sie als gegeben.",
+				"Zahlungsweise: per Überweisung oder durch Einzugsverfahren. Änderungen und Ergänzungen des",
+				"Vertrages sind nur wirksam, wenn sie schriftlich erfolgen. Werden einzelne Bestimmungen dieses",
+				"Vertrages unwirksam, wird dadurch die Gültigkeit des Vertrages im Übrigen nicht berührt.",
+			}
+		default:
+			break
+		}
+
+		y := 90.
+
+		pdf.SetFont("Arial", "", 10)
+		for _, line := range lines {
+			pdf.Text(20, y, tr(line))
+			y += 5
+		}
+
+		y += 10
+		pdf.SetFont("Arial", "B", 11)
+		pdf.Text(20, y, tr("Ermächtigung zum Einzug von Unterrichtsgebühren durch Lastschrift:"))
+
+		y += 5
+		pdf.SetFont("Arial", "", 11)
+		pdf.Text(20, y, tr("Hiermit ermächtige ich Sie widerruflich, die von mir zu entrichtenden Unterrichtsgebühren"))
+		y += 5
+		pdf.Text(20, y, tr("beginnend ab ........................... bei Fälligkeit zu Lasten meines Kontos"))
+		y += 7
+		pdf.Text(20, y, tr("IBAN: ................................................................................"))
+		y += 7
+		pdf.Text(20, y, tr("durch Lastschrift einzuziehen. Wenn mein Konto die erforderliche Deckung nicht aufweist, besteht"))
+		y += 5
+		pdf.Text(20, y, tr("seitens des kontoführenden Kreditinstitutes keine Verpflichtung zur Einlösung."))
+		y += 10
+		pdf.Text(20, y, tr("......................................................"))
+		pdf.Text(110, y, tr("........................................................................"))
+		y += 5
+		pdf.Text(20, y, tr("Ort, Datum"))
+		pdf.Text(110, y, tr("Unterschrift Kontoinhaber"))
+		y += 10
+		pdf.Text(20, y, tr("........................................................................"))
+		pdf.Text(110, y, tr("........................................................................"))
+		y += 5
+		pdf.Text(20, y, tr("Unterschrift Erziehungsberechtigte"))
+		pdf.Text(110, y, tr("Unterschrift Musikschule CML"))
+
+		var buffer bytes.Buffer
+		err = pdf.Output(&buffer)
+
+		if err != nil {
+			c.JSON(500, gin.H{"error": err.Error()})
+			return
+		}
+
+		var attachments = []*resend.Attachment{
+			{
+				Filename:    fmt.Sprintf("anmeldung-%s.pdf", tr(anmeldung.SchuelerName)),
+				Content:     buffer.Bytes(),
+				ContentType: "application/pdf",
+			},
+		}
+
+		params := &resend.SendEmailRequest{
+			From:        "Musikschule CML <mail@mail.jeschek.dev>",
+			To:          []string{receiver},
+			Subject:     fmt.Sprintf("Anmeldung und Unterrichtsvertrag zum %s", variantenString),
+			Attachments: attachments,
+			Html: `
+				<head></head>
+				<section style="max-width: 42rem; padding: 2rem 1.5rem; margin: 0 auto; background-color: #ffffff;">
+				<header>
+				<a href="https://musicschool-cml.de">
+				<img style="width: auto; height: 1.75rem;" src="https://musicschool-cml.de/favicon.ico" alt="" />
+				</a>
+				</header>
+
+				<main style="margin-top: 2rem;">
+				<h2 style="color: #4a5568;">Sehr geehrte Damen und Herren,</h2>
+
+				<p style="margin-top: 0.5rem; line-height: 1.75; color: #718096;">
+				Vielen Dank für das Ausfüllen des Anmeldeformulars auf musicschool-cml.de. <br />
+				Hiermit erhalten Sie den Unterrichtsvertrag zum Download. <br />
+				Bitte füllen Sie diesen aus und bringen Sie ihn zum ersten Unterricht (nach dem kostenlosen Probeunterricht) mit. <br /> <br />
+				Danach wird der Vertrag von uns gegengezeichnet und Sie erhalten eine Kopie. <br />
+				</p>
+
+				<p style="margin-top: 2rem; color: #718096;">
+				Mit freundlichen Grüßen, <br />
+				Ihr Musikschule CML Team
+				</p>
+
+				</main>
+				</section>
+				`,
+		}
+
+		send, err := client.Emails.Send(params)
+
+		if err != nil {
+			c.JSON(500, gin.H{"error": err.Error()})
+		} else {
+
+			c.JSON(200, gin.H{"message": "OK", "id": send.Id})
+		}
 	})
 
 	router.POST("/contact", func(c *gin.Context) {
