@@ -2,8 +2,12 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
+	"io"
 	"log"
+	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -27,6 +31,7 @@ type Anmeldung struct {
 	Geburtsdatum          string `json:"geburtsdatum"`
 	Vertrag               string `json:"vertrag"`
 	Einverstaendnis       bool   `json:"einverstaendnis"`
+	Token                 string `json:"token"`
 }
 
 type Kontakt struct {
@@ -42,16 +47,52 @@ func FirstCharUppercased(name string) string {
 	return fmt.Sprintf("%s%s", firstChar, rest)
 }
 
+func ValidateToken(token string, secret string) bool {
+	uri, err := url.Parse(fmt.Sprintf("https://www.google.com/recaptcha/api/siteverify?secret=%s&response=%s", secret, token))
+
+	if err != nil {
+		return false
+	}
+
+	resp, err := http.Get(uri.String())
+
+	if err != nil {
+		return false
+	}
+
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		return false
+	}
+
+	body, err := io.ReadAll(resp.Body)
+
+	if err != nil {
+		return false
+	}
+
+	var response map[string]interface{}
+
+	err = json.Unmarshal(body, &response)
+
+	if err != nil {
+		return false
+	}
+
+	return response["success"].(bool)
+}
+
 func main() {
 	resendApiKey := os.Getenv("RESEND_API_KEY")
 	receiver := os.Getenv("RESEND_RECEIVER")
+	recaptchaSecret := os.Getenv("RECAPTCHA_SECRET")
 	client := resend.NewClient(resendApiKey)
 
 	router := gin.Default()
 
 	router.Use(cors.New(cors.Config{
-		// AllowOrigins:    []string{"http://localhost:5173", "https://musicschool-cml.de", "*"},
-		AllowOrigins: []string{"*"},
+		AllowOrigins: []string{"http://localhost:5173", "https://musicschool-cml.de"},
 		AllowMethods: []string{"GET", "POST", "OPTIONS", "PUT"},
 		AllowHeaders: []string{"Origin", "Content-Type"},
 		MaxAge:       12 * time.Hour,
@@ -67,6 +108,11 @@ func main() {
 
 		if err != nil {
 			c.JSON(400, gin.H{"error": err.Error()})
+			return
+		}
+
+		if !ValidateToken(anmeldung.Token, recaptchaSecret) {
+			c.JSON(400, gin.H{"error": "Recaptcha validation failed"})
 			return
 		}
 
@@ -268,7 +314,7 @@ func main() {
 
 		params := &resend.SendEmailRequest{
 			From:        "Musikschule CML <mail@mail.jeschek.dev>",
-			To:          []string{receiver},
+			To:          []string{anmeldung.Email},
 			Subject:     fmt.Sprintf("Anmeldung und Unterrichtsvertrag zum %s", variantenString),
 			Attachments: attachments,
 			Html: `
@@ -316,6 +362,11 @@ func main() {
 
 		if err != nil {
 			c.JSON(400, gin.H{"error": err.Error()})
+			return
+		}
+
+		if !ValidateToken(kontakt.Token, recaptchaSecret) {
+			c.JSON(400, gin.H{"error": "Recaptcha validation failed"})
 			return
 		}
 
