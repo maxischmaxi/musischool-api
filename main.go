@@ -123,42 +123,31 @@ func GeneratePdf(anmeldung Anmeldung) ([]byte, error) {
 	pdf.Text(20, 79, fmt.Sprintf("Telefon: +49 %s", anmeldung.Telefon))
 	pdf.Text(110, 79, fmt.Sprintf("E-Mail: %s", anmeldung.Email))
 
-	var lines = []string{}
+	var lines []string
 
-	switch anmeldung.Vertrag {
-	case "1":
-		lines = []string{
-			"Die Musikschule übernimmt den regelmäßigen Unterricht des Schülers beginnend am ...........................",
-			"Als Unterrichtsjahr gilt das Kalenderjahr. Der Unterricht wird als Lektion zu wöchentlich einmal 30",
-			"Minuten in multidimensionaler Form (siehe Anhang) erteilt, monatliche Gebühr = 88,- Euro.",
-			"Das Honorar wird als Jahreshonorar berechnet und ist in 12 gleichen Raten im Voraus bis zum 10.",
-			"jeden Monats zu zahlen, einmalige Aufnahmegebühr: 20,- Euro. Der Unterricht kann nur an",
-			"Schultagen erteilt werden. Bei Rücklastschriften berechnen wir 10,-€ pro nicht einlösbarer",
-			"Lastschrift. Die erste Unterrichtsstunde ist ein Gratis-Probeunterricht, die vereinbarte Zeit gilt für alle folgenden",
-			"Stunden. Will ein Schüler den Unterricht nach der kostenlosen Probestunde nicht fortsetzen, genügt",
-			"eine entsprechende mündliche Mitteilung. Bei längerer Krankheit des Schülers entfällt das anteilige",
-			"Honorar nach der vierten einander folgenden versäumten Stunde.",
-			"Der Kurs kann von den Vertragspartnern mit sechswöchiger Frist zum 30.April/ 31.August/",
-			"31.Dezember in schriftlicher Form gekündigt werden. Die Kündigung kann durch eine E-Mail",
-			"erfolgen und muß vor Beginn der Kündigungsfrist bei o.g. Anschrift eingegangen sein. Eine",
-			"Erhöhung des Honorars ist möglich und hat nach Grundsätzen der Billigkeit zu erfolgen. Sie muß",
-			"mindestens 8 Wochen vorher dem Vertragspartner schriftlich mitgeteilt werden.",
-			"Für vom Schüler versäumte oder abgesagte Stunden ist die Lehrkraft nicht nachleistungspflichtig,",
-			"die anteilige Vergütung hierfür kann vom Honorar nicht abgezogen werden. Es besteht jedoch die",
-			"Möglichkeit, in derselben Woche ersatzweise an einer anderen Unterrichtsstunde teilzunehmen,",
-			"wenn die Lehrkraft im Falle ernsthafter Verhinderung mindestens 24 Stunden vorher davon",
-			"Kenntnis erhalten hat. Aus anderen Gründen von der Lehrkraft abgesagte Stunden werden",
-			"nachgegeben, ersatzweise wird das anteilige Honorar erstattet. Zahlungsweise: nur monatlich durch",
-			"Einzugsverfahren. Änderungen und Ergänzungen des Vertrages sind nur wirksam, wenn sie",
-			"schriftlich erfolgen. Werden einzelne Bestimmungen dieses Vertrages unwirksam, wird dadurch die",
-			"Gültigkeit des Vertrages im Übrigen nicht berührt.",
+	if anmeldung.Vertrag == "1" || anmeldung.Vertrag == "2" || anmeldung.Vertrag == "3" {
+		var preis string
+		var minuten string
+
+		switch anmeldung.Vertrag {
+		case "1":
+			preis = "88"
+			minuten = "30"
+		case "2":
+			preis = "111"
+			minuten = "45"
+		case "3":
+			preis = "66"
+			minuten = "60"
+		default:
+			preis = "111"
+			minuten = "45"
 		}
 
-	case "2":
 		lines = []string{
 			"Die Musikschule übernimmt den regelmäßigen Unterricht des Schülers beginnend am ...........................",
-			"Als Unterrichtsjahr gilt das Kalenderjahr. Der Unterricht wird als Lektion zu wöchentlich einmal 45",
-			"Minuten erteilt, monatliche Gebühr = 111,- Euro.",
+			fmt.Sprintf("Als Unterrichtsjahr gilt das Kalenderjahr. Der Unterricht wird als Lektion zu wöchentlich einmal %s", minuten),
+			fmt.Sprintf("Minuten erteilt, monatliche Gebühr = %s,- Euro.", preis),
 			"Das Honorar wird als Jahreshonorar berechnet und ist in 12 gleichen Raten im Voraus bis zum 10.",
 			"jeden Monats zu zahlen, einmalige Aufnahmegebühr: 20,- Euro. Der Unterricht kann nur an",
 			"Schultagen erteilt werden. Bei Rücklastschriften berechnen wir 10,-€ pro nicht einlösbarer",
@@ -181,34 +170,7 @@ func GeneratePdf(anmeldung Anmeldung) ([]byte, error) {
 			"schriftlich erfolgen. Werden einzelne Bestimmungen dieses Vertrages unwirksam, wird dadurch die",
 			"Gültigkeit des Vertrages im Übrigen nicht berührt.",
 		}
-	case "3":
-		lines = []string{
-			"Die Musikschule übernimmt den regelmäßigen Unterricht des Schülers beginnend am ...........................",
-			"Als Unterrichtsjahr gilt das Kalenderjahr. Der Unterricht wird als Lektion zu wöchentlich einmal 60",
-			"Minuten als Gruppenunterricht erteilt, monatliche Gebühr = 66,- Euro.",
-			"Das Honorar wird als Jahreshonorar berechnet und ist in 12 gleichen Raten im Voraus bis zum 10.",
-			"jeden Monats zu zahlen, einmalige Aufnahmegebühr: 20,- Euro. Der Unterricht kann nur an",
-			"Schultagen erteilt werden. Bei Rücklastschriften berechnen wir 10,-€ pro nicht einlösbarer",
-			"Lastschrift. Die erste Unterrichtsstunde ist ein Gratis-Probeunterricht, die vereinbarte Zeit gilt für alle folgenden",
-			"Stunden. Will ein Schüler den Unterricht nach der kostenlosen Probestunde nicht fortsetzen, genügt",
-			"eine entsprechende mündliche Mitteilung. Bei längerer Krankheit des Schülers entfällt das anteilige",
-			"Honorar nach der vierten einander folgenden versäumten Stunde.",
-			"Der Kurs kann von den Vertragspartnern mit sechswöchiger Frist zum 30.April/ 31.August/",
-			"31.Dezember in schriftlicher Form gekündigt werden. Die Kündigung kann durch eine E-Mail",
-			"erfolgen und muß vor Beginn der Kündigungsfrist bei o.g. Anschrift eingegangen sein. Eine",
-			"Erhöhung des Honorars ist möglich und hat nach Grundsätzen der Billigkeit zu erfolgen. Sie muß",
-			"mindestens 8 Wochen vorher dem Vertragspartner schriftlich mitgeteilt werden.",
-			"Für vom Schüler versäumte oder abgesagte Stunden ist die Lehrkraft nicht nachleistungspflichtig,",
-			"die anteilige Vergütung hierfür kann vom Honorar nicht abgezogen werden. Es besteht jedoch die",
-			"Möglichkeit, in derselben Woche ersatzweise an einer anderen Unterrichtsstunde teilzunehmen,",
-			"wenn die Lehrkraft im Falle ernsthafter Verhinderung mindestens 24 Stunden vorher davon",
-			"Kenntnis erhalten hat. Aus anderen Gründen von der Lehrkraft abgesagte Stunden werden",
-			"nachgegeben, ersatzweise wird das anteilige Honorar erstattet. Zahlungsweise: nur monatlich durch",
-			"Einzugsverfahren. Änderungen und Ergänzungen des Vertrages sind nur wirksam, wenn sie",
-			"schriftlich erfolgen. Werden einzelne Bestimmungen dieses Vertrages unwirksam, wird dadurch die",
-			"Gültigkeit des Vertrages im Übrigen nicht berührt.",
-		}
-	case "4":
+	} else {
 		lines = []string{
 			"Der Unterricht wird als 10-stündige Lektion zu jeweils 45 Minuten bei freier Vereinbarung des",
 			"Zeitpunktes in Absprache mit der zuständigen Lehrkraft erteilt, einmahlige Gebühr = 450,- Euro.",
@@ -219,8 +181,6 @@ func GeneratePdf(anmeldung Anmeldung) ([]byte, error) {
 			"Vertrages sind nur wirksam, wenn sie schriftlich erfolgen. Werden einzelne Bestimmungen dieses",
 			"Vertrages unwirksam, wird dadurch die Gültigkeit des Vertrages im Übrigen nicht berührt.",
 		}
-	default:
-		break
 	}
 
 	y := 90.
