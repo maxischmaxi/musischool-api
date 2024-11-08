@@ -182,7 +182,7 @@ func main() {
 			return
 		}
 
-		c.JSON(200, gin.H{"message": "OK"})
+		c.JSON(200, gin.H{"message": "ok"})
 	})
 
 	router.POST("/contact", func(c *gin.Context) {
@@ -208,7 +208,7 @@ func main() {
 			Html:    kontakt.GetKontaktHTML(),
 		}
 
-		send, err := client.Emails.Send(params)
+		_, err = client.Emails.Send(params)
 
 		if err != nil {
 			log.Println(err)
@@ -216,7 +216,7 @@ func main() {
 			return
 		}
 
-		c.JSON(200, gin.H{"message": send.Id})
+		c.JSON(200, gin.H{"message": "ok"})
 	})
 
 	log.Fatal(router.Run(":8080"))
