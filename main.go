@@ -1,15 +1,12 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
-	"io"
 	"log"
-	"net/http"
-	"net/url"
 	"os"
 	"time"
 
+	"github.com/dpapathanasiou/go-recaptcha"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/resend/resend-go/v2"
@@ -41,63 +38,16 @@ type Kontakt struct {
 type Config struct {
 	ResendApiKey string
 	Receiver     string
-	Recaptcha    string
-}
-
-func (c *Config) ValidateToken(token string) bool {
-	if token == "" {
-		return false
-	}
-
-	uri, err := url.Parse(fmt.Sprintf("https://www.google.com/recaptcha/api/siteverify?secret=%s&response=%s", c.Recaptcha, token))
-
-	if err != nil {
-		return false
-	}
-
-	resp, err := http.Get(uri.String())
-
-	if err != nil {
-		return false
-	}
-
-	defer resp.Body.Close()
-
-	if resp.StatusCode != 200 {
-		return false
-	}
-
-	body, err := io.ReadAll(resp.Body)
-
-	if err != nil {
-		return false
-	}
-
-	var response map[string]interface{}
-
-	err = json.Unmarshal(body, &response)
-
-	if err != nil {
-		return false
-	}
-
-	return response["success"].(bool)
 }
 
 func main() {
 	config := Config{
 		ResendApiKey: os.Getenv("RESEND_API_KEY"),
 		Receiver:     os.Getenv("RESEND_RECEIVER"),
-		Recaptcha:    os.Getenv("RECAPTCHA_SECRET"),
 	}
 
 	client := resend.NewClient(config.ResendApiKey)
-
-	log.Println("Starting server...")
-	log.Println("Receiver: ", config.Receiver)
-	log.Println("Resend API Key: ", config.ResendApiKey)
-	log.Println("Recaptcha Secret: ", config.Recaptcha)
-
+	recaptcha.Init(os.Getenv("RECAPTCHA_SECRET"))
 	router := gin.Default()
 
 	router.Use(cors.New(cors.Config{
@@ -123,7 +73,15 @@ func main() {
 			return
 		}
 
-		if !config.ValidateToken(anmeldung.Token) {
+		success, err := recaptcha.Confirm(c.ClientIP(), anmeldung.Token)
+
+		if err != nil {
+			log.Println(err)
+			c.JSON(400, gin.H{"error": "Recaptcha validation failed"})
+			return
+		}
+
+		if !success {
 			log.Println("Recaptcha validation failed")
 			c.JSON(400, gin.H{"error": "Recaptcha validation failed"})
 			return
@@ -195,7 +153,15 @@ func main() {
 			return
 		}
 
-		if !config.ValidateToken(kontakt.Token) {
+		success, err := recaptcha.Confirm(c.ClientIP(), kontakt.Token)
+
+		if err != nil {
+			log.Println(err)
+			c.JSON(400, gin.H{"error": "Recaptcha validation failed"})
+			return
+		}
+
+		if !success {
 			log.Println("Recaptcha validation failed")
 			c.JSON(400, gin.H{"error": "Recaptcha validation failed"})
 			return

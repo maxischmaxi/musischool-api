@@ -3,6 +3,7 @@ module maxischmaxi/musicschool-api
 go 1.23.2
 
 require (
+	github.com/dpapathanasiou/go-recaptcha v0.0.0-20190121160230-be5090b17804
 	github.com/gin-contrib/cors v1.7.2
 	github.com/gin-gonic/gin v1.10.0
 	github.com/go-pdf/fpdf v0.9.0

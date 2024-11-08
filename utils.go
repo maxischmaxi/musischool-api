@@ -1,8 +1,14 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
+	"net/url"
 	"strings"
+
+	"github.com/dpapathanasiou/go-recaptcha"
 )
 
 func FirstCharUppercased(name string) string {
