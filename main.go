@@ -41,14 +41,24 @@ type Kontakt struct {
 	Token   string `json:"token"`
 }
 
+type Config struct {
+	ResendApiKey string
+	Receiver     string
+	Recaptcha    string
+}
+
 func FirstCharUppercased(name string) string {
 	firstChar := strings.ToUpper(string(name[0]))
 	rest := name[1:]
 	return fmt.Sprintf("%s%s", firstChar, rest)
 }
 
-func ValidateToken(token string, secret string) bool {
-	uri, err := url.Parse(fmt.Sprintf("https://www.google.com/recaptcha/api/siteverify?secret=%s&response=%s", secret, token))
+func (c *Config) ValidateToken(token string) bool {
+	if token == "" {
+		return false
+	}
+
+	uri, err := url.Parse(fmt.Sprintf("https://www.google.com/recaptcha/api/siteverify?secret=%s&response=%s", c.Recaptcha, token))
 
 	if err != nil {
 		return false
@@ -230,15 +240,18 @@ func GeneratePdf(anmeldung Anmeldung) ([]byte, error) {
 }
 
 func main() {
-	resendApiKey := os.Getenv("RESEND_API_KEY")
-	receiver := os.Getenv("RESEND_RECEIVER")
-	recaptchaSecret := os.Getenv("RECAPTCHA_SECRET")
-	client := resend.NewClient(resendApiKey)
+	config := Config{
+		ResendApiKey: os.Getenv("RESEND_API_KEY"),
+		Receiver:     os.Getenv("RESEND_RECEIVER"),
+		Recaptcha:    os.Getenv("RECAPTCHA_SECRET"),
+	}
+
+	client := resend.NewClient(config.ResendApiKey)
 
 	log.Println("Starting server...")
-	log.Println("Receiver: ", receiver)
-	log.Println("Resend API Key: ", resendApiKey)
-	log.Println("Recaptcha Secret: ", recaptchaSecret)
+	log.Println("Receiver: ", config.Receiver)
+	log.Println("Resend API Key: ", config.ResendApiKey)
+	log.Println("Recaptcha Secret: ", config.Recaptcha)
 
 	router := gin.Default()
 
@@ -265,7 +278,7 @@ func main() {
 			return
 		}
 
-		if !ValidateToken(anmeldung.Token, recaptchaSecret) {
+		if !config.ValidateToken(anmeldung.Token) {
 			log.Println("Recaptcha validation failed")
 			c.JSON(400, gin.H{"error": "Recaptcha validation failed"})
 			return
@@ -348,7 +361,7 @@ func main() {
 			return
 		}
 
-		if !ValidateToken(kontakt.Token, recaptchaSecret) {
+		if !config.ValidateToken(kontakt.Token) {
 			log.Println("Recaptcha validation failed")
 			c.JSON(400, gin.H{"error": "Recaptcha validation failed"})
 			return
@@ -356,7 +369,7 @@ func main() {
 
 		params := &resend.SendEmailRequest{
 			From:    "Musikschule CML <mail@mail.jeschek.dev>",
-			To:      []string{receiver},
+			To:      []string{config.Receiver},
 			Subject: "Kontaktformular - musicschool-cml.de",
 			Html: fmt.Sprintf(`
 				<head></head>
