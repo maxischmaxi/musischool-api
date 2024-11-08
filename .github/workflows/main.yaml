@@ -1,45 +1,45 @@
-name: Deploy to GKE
-
-on:
-  push:
-    branches:
-      - main
-
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - id: 'auth'
-        uses: google-github-actions/auth@v2
-        with:
-          credentials_json: ${{ secrets.GCR_SA_KEY }}
-
-      - name: Set up Google Cloud SDK
-        uses: google-github-actions/setup-gcloud@v2
-
-      - name: Authenticate Docker to Google Container Registry
-        run: gcloud auth configure-docker
-
-      - name: Build and push Docker image
-        run: |
-          IMAGE_NAME=gcr.io/${{ secrets.GCP_PROJECT_ID }}/musicschool-api
-          IMAGE_TAG=$GITHUB_SHA
-          docker build -t $IMAGE_NAME:$IMAGE_TAG .
-          docker push $IMAGE_NAME:$IMAGE_TAG
-
-      - name: Set up kubectl
-        uses: google-github-actions/setup-gcloud@v2
-
-      - id: 'get-gke-credentials'
-        uses: 'google-github-actions/get-gke-credentials@v2'
-        with:
-          cluster_name: ${{ secrets.GKE_CLUSTER_NAME }}
-          location: ${{ secrets.GKE_ZONE }}
-
-      - name: Update Kubernetes deployment
-        run: |
-          kubectl set image deployment/musicschool-cml-deployment musicschool-api-container=gcr.io/${{ secrets.GCP_PROJECT_ID }}/musicschool-api:$GITHUB_SHA
+# name: Deploy to GKE
+#
+# on:
+#   push:
+#     branches:
+#       - main
+#
+# jobs:
+#   deploy:
+#     runs-on: ubuntu-latest
+#
+#     steps:
+      # - name: Checkout repository
+      #   uses: actions/checkout@v4
+      #
+      # - id: 'auth'
+      #   uses: google-github-actions/auth@v2
+      #   with:
+      #     credentials_json: ${{ secrets.GCR_SA_KEY }}
+      #
+      # - name: Set up Google Cloud SDK
+      #   uses: google-github-actions/setup-gcloud@v2
+      #
+      # - name: Authenticate Docker to Google Container Registry
+      #   run: gcloud auth configure-docker
+      #
+      # - name: Build and push Docker image
+      #   run: |
+      #     IMAGE_NAME=gcr.io/${{ secrets.GCP_PROJECT_ID }}/musicschool-api
+      #     IMAGE_TAG=$GITHUB_SHA
+      #     docker build -t $IMAGE_NAME:$IMAGE_TAG .
+      #     docker push $IMAGE_NAME:$IMAGE_TAG
+      #
+      # - name: Set up kubectl
+      #   uses: google-github-actions/setup-gcloud@v2
+      #
+      # - id: 'get-gke-credentials'
+      #   uses: 'google-github-actions/get-gke-credentials@v2'
+      #   with:
+      #     cluster_name: ${{ secrets.GKE_CLUSTER_NAME }}
+      #     location: ${{ secrets.GKE_ZONE }}
+      #
+      # - name: Update Kubernetes deployment
+      #   run: |
+      #     kubectl set image deployment/musicschool-cml-deployment musicschool-api-container=gcr.io/${{ secrets.GCP_PROJECT_ID }}/musicschool-api:$GITHUB_SHA
