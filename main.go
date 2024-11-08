@@ -243,10 +243,12 @@ func main() {
 	router := gin.Default()
 
 	router.Use(cors.New(cors.Config{
-		AllowOrigins: []string{"http://localhost:5173", "https://musicschool-cml.de"},
-		AllowMethods: []string{"GET", "POST", "OPTIONS", "PUT"},
-		AllowHeaders: []string{"Origin", "Content-Type"},
-		MaxAge:       12 * time.Hour,
+		AllowOrigins:     []string{"http://localhost:5173", "https://musicschool-cml.de", "https://www.musicschool-cml.de"},
+		AllowMethods:     []string{"GET", "POST", "OPTIONS", "PUT"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
+		AllowCredentials: true,
+		ExposeHeaders:    []string{"Content-Type", "Content-Length"},
+		MaxAge:           12 * time.Hour,
 	}))
 
 	router.GET("/", func(c *gin.Context) {
