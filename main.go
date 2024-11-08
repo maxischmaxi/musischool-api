@@ -36,17 +36,15 @@ type Kontakt struct {
 }
 
 type Config struct {
-	ResendApiKey string
-	Receiver     string
+	Receiver string
 }
 
 func main() {
 	config := Config{
-		ResendApiKey: os.Getenv("RESEND_API_KEY"),
-		Receiver:     os.Getenv("RESEND_RECEIVER"),
+		Receiver: os.Getenv("RESEND_RECEIVER"),
 	}
 
-	client := resend.NewClient(config.ResendApiKey)
+	client := resend.NewClient(os.Getenv("RESEND_API_KEY"))
 	recaptcha.Init(os.Getenv("RECAPTCHA_SECRET"))
 	router := gin.Default()
 
