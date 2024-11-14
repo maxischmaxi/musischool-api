@@ -49,11 +49,11 @@ func main() {
 	router := gin.Default()
 
 	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"*"},
+		AllowOrigins:     []string{"http://localhost:3000", "https://musicschool-cml.de", "https://www.musicschool-cml.de"},
 		AllowMethods:     []string{"GET", "POST", "OPTIONS", "PUT"},
-		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
+		AllowHeaders:     []string{"Origin", "Content-Length", "Content-Type", "Accept"},
 		AllowCredentials: true,
-		ExposeHeaders:    []string{"Content-Type", "Content-Length"},
+		AllowWebSockets:  false,
 		MaxAge:           12 * time.Hour,
 	}))
 
